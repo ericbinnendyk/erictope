@@ -1,0 +1,20 @@
+@DIMENSION
+3
+
+@BASIS
+1, 0, 0
+0, 1, 0
+1/2, 1/2, sqrt(2)/2
+
+@POINTS
+0, 0, 0
+
+@EDGES
+# we only need 6 of the 12 edges coming out of each vertex, because then the other 6 will come into it from other vertices
+# i choose two of the four edges from the central square in the co verf and the four from the top square
+0, 0[1,0,0]
+0, 0[0,1,0]
+0, 0[0,0,1]
+0, 0[-1,0,1]
+0, 0[-1,-1,1]
+0, 0[0,-1,1]
