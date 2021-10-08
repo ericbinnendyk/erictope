@@ -44,8 +44,75 @@ def multi_range(a, b):
             curr[i] = a[i]
         yield tuple(curr)
 
-def draw_edges(w, basis, points, edges, rotation_matrix):
-    for i in multi_range([-3] * dimension, [3] * dimension):
+def rotated_point_in_range(rotated_point):
+    phys_point = coord_transform(truncto2(rotated_point))
+    if len(rotated_point) == 3:
+        return all([-100 <= x <= 600 for x in phys_point]) and -3 <= rotated_point[2] <= 3
+    if len(rotated_point) == 2:
+        return all([-100 <= x <= 600 for x in phys_point])
+    raise RuntimeError("Dimension not implemented yet.")
+
+def in_range(dimension, offset, basis, points, rotation_matrix):
+    for point in points:
+        moved_point = vadd(point, [scalar_mult(mult, basis_vect) for mult, basis_vect in zip(offset, basis)])
+        rotated_point = matrix_mult(rotation_matrix, moved_point)
+        if rotated_point_in_range(rotated_point):
+            return True
+    return False
+
+# gets the offsets (multiples of the basis vectors) of copies of the fundamental translational domain points that are within range of visibility in the final window, and thus should be rendered
+def get_offsets_in_range(basis, points, rotation_matrix):
+    def pop(queue):
+        first = queue[0]
+        del queue[0]
+        return first
+
+    def get_neighbors(offset):
+        neighs = []
+        for i in range(dimension):
+            neighbor = offset[:]
+            neighbor[i] -= 1
+            neighs.append(neighbor)
+            neighbor = offset[:]
+            neighbor[i] += 1
+            neighs.append(neighbor)
+        return neighs
+
+    dimension = len(basis[0])
+    queue = [[0]*dimension]
+    offsets = [[0]*dimension]
+    while len(queue) > 0:
+        x = pop(queue)
+        neighbors = get_neighbors(x)
+        for n in neighbors:
+            if n not in offsets:
+                if in_range(dimension, n, basis, points, rotation_matrix):
+                    queue.append(n)
+                    offsets.append(n)
+                else:
+                    moved_point = vadd(points[0], [scalar_mult(mult, basis_vect) for mult, basis_vect in zip(n, basis)])
+                    rotated_point = matrix_mult(rotation_matrix, moved_point)
+    return offsets
+
+def draw_edges(w, basis, points, edges, offsets, rotation_matrix):
+    for offset in offsets:
+        for edge in edges:
+            # coordinates of first point with zero offset
+            point1 = vadd(points[edge[0][0]], [scalar_mult(mult, basis_vect) for mult, basis_vect in zip(edge[0][1], basis)])
+            # coordinates of first point with correct offset
+            moved_point1 = vadd(point1, [scalar_mult(mult, basis_vect) for mult, basis_vect in zip(offset, basis)])
+            # coordinates of second point with zero offset
+            point2 = vadd(points[edge[1][0]], [scalar_mult(mult, basis_vect) for mult, basis_vect in zip(edge[1][1], basis)])
+            # coordinates of second point with correct offset
+            moved_point2 = vadd(point2, [scalar_mult(mult, basis_vect) for mult, basis_vect in zip(offset, basis)])
+            # rotated coordinate of first point
+            rotated_point1 = matrix_mult(rotation_matrix, moved_point1)
+            # rotated coordinates of second point
+            rotated_point2 = matrix_mult(rotation_matrix, moved_point2)
+            flat_point1 = truncto2(rotated_point1)
+            flat_point2 = truncto2(rotated_point2)
+            draw_line(w, flat_point1, flat_point2)
+    '''for i in multi_range([-3] * dimension, [3] * dimension):
         for edge in edges:
             point1 = vadd(points[edge[0][0]], [scalar_mult(mult, basis_vect) for mult, basis_vect in zip(edge[0][1], basis)])
             moved_point1 = vadd(point1, [scalar_mult(mult, basis_vect) for mult, basis_vect in zip(i, basis)])
@@ -55,15 +122,16 @@ def draw_edges(w, basis, points, edges, rotation_matrix):
             rotated_point2 = matrix_mult(rotation_matrix, moved_point2)
             flat_point1 = truncto2(rotated_point1)
             flat_point2 = truncto2(rotated_point2)
-            draw_line(w, flat_point1, flat_point2)
+            draw_line(w, flat_point1, flat_point2)'''
 
 # draws points on screen given abstract coordinates in n-space
 # first convert from n-space to 2-space
 # then convert from virtual coordinates to physical coordinates
-def draw_points(w, basis, points, rotation_matrix):
-    for i in multi_range([-3] * dimension, [3] * dimension):
+def draw_points(w, basis, points, offsets, rotation_matrix):
+    '''for i in multi_range([-3] * dimension, [3] * dimension):'''
+    for offset in offsets:
         for point in points:
-            moved_point = vadd(point, [scalar_mult(i[k], basis[k]) for k in range(len(i))])
+            moved_point = vadd(point, [scalar_mult(offset[k], basis[k]) for k in range(len(offset))])
             rotated_point = matrix_mult(rotation_matrix, moved_point)
             flat_point = truncto2(rotated_point)
             draw_point(w, flat_point)
@@ -272,32 +340,36 @@ if __name__ == "__main__":
         global rotation
         rotation = rotate_left(rotation)
         w.delete("all")
-        draw_edges(w, basis, points, edges, rotation)
-        draw_points(w, basis, points, rotation)        
+        offsets = get_offsets_in_range(basis, points, rotation)
+        draw_edges(w, basis, points, edges, offsets, rotation)
+        draw_points(w, basis, points, offsets, rotation)
 
     def right_button_fn():
         if dimension != 3: return
         global rotation
         rotation = rotate_right(rotation)
         w.delete("all")
-        draw_edges(w, basis, points, edges, rotation)
-        draw_points(w, basis, points, rotation)        
+        offsets = get_offsets_in_range(basis, points, rotation)
+        draw_edges(w, basis, points, edges, offsets, rotation)
+        draw_points(w, basis, points, offsets, rotation) 
 
     def up_button_fn():
         if dimension != 3: return
         global rotation
         rotation = rotate_up(rotation)
         w.delete("all")
-        draw_edges(w, basis, points, edges, rotation)
-        draw_points(w, basis, points, rotation)        
+        offsets = get_offsets_in_range(basis, points, rotation)
+        draw_edges(w, basis, points, edges, offsets, rotation)
+        draw_points(w, basis, points, offsets, rotation)
 
     def down_button_fn():
         if dimension != 3: return
         global rotation
         rotation = rotate_down(rotation)
         w.delete("all")
-        draw_edges(w, basis, points, edges, rotation)
-        draw_points(w, basis, points, rotation)        
+        offsets = get_offsets_in_range(basis, points, rotation)
+        draw_edges(w, basis, points, edges, offsets, rotation)
+        draw_points(w, basis, points, offsets, rotation)
 
     def cw_button_fn():
         global rotation
@@ -306,8 +378,9 @@ if __name__ == "__main__":
         if dimension == 2:
             rotation = rotate_cw_2d(rotation)
         w.delete("all")
-        draw_edges(w, basis, points, edges, rotation)
-        draw_points(w, basis, points, rotation)        
+        offsets = get_offsets_in_range(basis, points, rotation)
+        draw_edges(w, basis, points, edges, offsets, rotation)
+        draw_points(w, basis, points, offsets, rotation)
 
     def ccw_button_fn():
         global rotation
@@ -316,11 +389,13 @@ if __name__ == "__main__":
         if dimension == 2:
             rotation = rotate_ccw_2d(rotation)
         w.delete("all")
-        draw_edges(w, basis, points, edges, rotation)
-        draw_points(w, basis, points, rotation)        
+        offsets = get_offsets_in_range(basis, points, rotation)
+        draw_edges(w, basis, points, edges, offsets, rotation)
+        draw_points(w, basis, points, offsets, rotation)
 
-    draw_edges(w, basis, points, edges, rotation)
-    draw_points(w, basis, points, rotation)
+    offsets = get_offsets_in_range(basis, points, rotation)
+    draw_edges(w, basis, points, edges, offsets, rotation)
+    draw_points(w, basis, points, offsets, rotation)
 
     left_button.configure(command=left_button_fn)
     right_button.configure(command=right_button_fn)
