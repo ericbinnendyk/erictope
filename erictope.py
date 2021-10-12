@@ -156,6 +156,9 @@ def two_matrix_mult(mat1, mat2):
     dim = len(mat1)
     return [[sum([mat1[a][b]*mat2[b][c] for b in range(dim)]) for c in range(dim)] for a in range(dim)]
 
+def identity(dim):
+    return [[1 if j == i else 0 for j in range(dim)] for i in range(dim)]
+
 def rotate_up(rotation):
     delta = [[1,0,0],[0,cos(tau/24),-sin(tau/24)],[0,sin(tau/24),cos(tau/24)]]
     new_rotation = two_matrix_mult(delta, rotation)
@@ -209,6 +212,7 @@ if __name__ == "__main__":
     w = Canvas(master, width=500, height=500)
     w.pack()
 
+    # add buttons
     left_button = Button(master, text = "<<", fg = "Black", bg = "Gray")
     left_button.pack()
     right_button = Button(master, text = ">>", fg = "Black", bg = "Gray")
@@ -221,6 +225,8 @@ if __name__ == "__main__":
     cw_button.pack()
     ccw_button = Button(master, text = "Counterclockwise", fg = "Black", bg = "Gray")
     ccw_button.pack()
+    reset_button = Button(master, text = "Reset position", fg = "Black", bg = "Gray")
+    reset_button.pack()
 
     print("Welcome to Erictope!")
     path = input("Enter file to read coordinates from: ")
@@ -393,6 +399,14 @@ if __name__ == "__main__":
         draw_edges(w, basis, points, edges, offsets, rotation)
         draw_points(w, basis, points, offsets, rotation)
 
+    def reset_position():
+        global rotation
+        rotation = identity(dimension)
+        w.delete("all")
+        offsets = get_offsets_in_range(basis, points, rotation)
+        draw_edges(w, basis, points, edges, offsets, rotation)
+        draw_points(w, basis, points, offsets, rotation)
+
     offsets = get_offsets_in_range(basis, points, rotation)
     draw_edges(w, basis, points, edges, offsets, rotation)
     draw_points(w, basis, points, offsets, rotation)
@@ -403,6 +417,7 @@ if __name__ == "__main__":
     down_button.configure(command=down_button_fn)
     cw_button.configure(command=cw_button_fn)
     ccw_button.configure(command=ccw_button_fn)
+    reset_button.configure(command=reset_position)
 
     mainloop()
 
