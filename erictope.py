@@ -148,6 +148,12 @@ def draw_point(w, point_2d):
 def draw_line(w, point_2d_1, point_2d_2):
     w.create_line(*coord_transform(point_2d_1), *coord_transform(point_2d_2), fil="#000000")
 
+def draw_honeycomb(w, basis, points, edges, rotation):
+    w.delete("all")
+    offsets = get_offsets_in_range(basis, points, rotation)
+    draw_edges(w, basis, points, edges, offsets, rotation)
+    draw_points(w, basis, points, offsets, rotation)
+
 def matrix_mult(mat, vec):
     return [sum([mat[i][j]*vec[j] for j in range(len(vec))]) for i in range(len(mat))]
 
@@ -338,37 +344,25 @@ if __name__ == "__main__":
         if dimension != 3: return
         global rotation
         rotation = rotate_left(rotation)
-        w.delete("all")
-        offsets = get_offsets_in_range(basis, points, rotation)
-        draw_edges(w, basis, points, edges, offsets, rotation)
-        draw_points(w, basis, points, offsets, rotation)
+        draw_honeycomb(w, basis, points, edges, rotation)
 
     def right_button_fn():
         if dimension != 3: return
         global rotation
         rotation = rotate_right(rotation)
-        w.delete("all")
-        offsets = get_offsets_in_range(basis, points, rotation)
-        draw_edges(w, basis, points, edges, offsets, rotation)
-        draw_points(w, basis, points, offsets, rotation) 
+        draw_honeycomb(w, basis, points, edges, rotation)
 
     def up_button_fn():
         if dimension != 3: return
         global rotation
         rotation = rotate_up(rotation)
-        w.delete("all")
-        offsets = get_offsets_in_range(basis, points, rotation)
-        draw_edges(w, basis, points, edges, offsets, rotation)
-        draw_points(w, basis, points, offsets, rotation)
+        draw_honeycomb(w, basis, points, edges, rotation)
 
     def down_button_fn():
         if dimension != 3: return
         global rotation
         rotation = rotate_down(rotation)
-        w.delete("all")
-        offsets = get_offsets_in_range(basis, points, rotation)
-        draw_edges(w, basis, points, edges, offsets, rotation)
-        draw_points(w, basis, points, offsets, rotation)
+        draw_honeycomb(w, basis, points, edges, rotation)
 
     def cw_button_fn():
         global rotation
@@ -376,10 +370,7 @@ if __name__ == "__main__":
             rotation = rotate_cw(rotation)
         if dimension == 2:
             rotation = rotate_cw_2d(rotation)
-        w.delete("all")
-        offsets = get_offsets_in_range(basis, points, rotation)
-        draw_edges(w, basis, points, edges, offsets, rotation)
-        draw_points(w, basis, points, offsets, rotation)
+        draw_honeycomb(w, basis, points, edges, rotation)
 
     def ccw_button_fn():
         global rotation
@@ -387,22 +378,14 @@ if __name__ == "__main__":
             rotation = rotate_ccw(rotation)
         if dimension == 2:
             rotation = rotate_ccw_2d(rotation)
-        w.delete("all")
-        offsets = get_offsets_in_range(basis, points, rotation)
-        draw_edges(w, basis, points, edges, offsets, rotation)
-        draw_points(w, basis, points, offsets, rotation)
+        draw_honeycomb(w, basis, points, edges, rotation)
 
     def reset_position():
         global rotation
         rotation = identity(dimension)
-        w.delete("all")
-        offsets = get_offsets_in_range(basis, points, rotation)
-        draw_edges(w, basis, points, edges, offsets, rotation)
-        draw_points(w, basis, points, offsets, rotation)
+        draw_honeycomb(w, basis, points, edges, rotation)
 
-    offsets = get_offsets_in_range(basis, points, rotation)
-    draw_edges(w, basis, points, edges, offsets, rotation)
-    draw_points(w, basis, points, offsets, rotation)
+    draw_honeycomb(w, basis, points, edges, rotation)
 
     left_button.configure(command=left_button_fn)
     right_button.configure(command=right_button_fn)
