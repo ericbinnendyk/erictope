@@ -332,14 +332,7 @@ if __name__ == "__main__":
         flat_edges_coords.append([p0, p1])'''
 
     # Let's start with the points, and then apply the transformation, and then draw the points
-    if dimension == 3:
-        rotation = [[1,0,0],[0,1,0],[0,0,1]]
-        #rotation = [[1,0,0],[0,cos(tau/16),sin(tau/16)],[0,-sin(tau/16),cos(tau/16)]]
-    if dimension == 2:
-        rotation = [[1,0],[0,1]]
-        #rotation = [[cos(tau/16),sin(tau/16)],[-sin(tau/16),cos(tau/16)]]
-    if dimension == 1:
-        rotation = [[1]]
+    rotation = identity(dimension)
 
     def left_button_fn():
         if dimension != 3: return
