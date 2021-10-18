@@ -1,10 +1,18 @@
 from tkinter import *
 from math import sqrt, cos, sin, pi
+from itertools import product
 
 tau = 2*pi
 
 scale = 60
 phys_offset = 250
+background_gray = 217
+
+# About the vector spaces used in Erictope:
+# Abstract n-D coordinates: Universal set of coordinates used when describing features of the shape, specified in the input file. They do not depend on rotation or screen position.
+# Abstract rotated n-D coordinates: Coordinates of the rotated shape, in the same abstract space as the universal coordinates.
+# Concrete n-D coordinates: the first two coordinates are the literal pixel coordinates on screen, calculated from the abstract rotated coordinates, screen dimensions, and zoom level (when it is implemented). Further coordinates are an extension of this idea as if the screen was higher dimensional, used for determining the level of fading (not fully implemented)
+# Concrete 2D coordinates: the first two of the concrete n-D coordinates, giving the actual position on screen.
 
 # adds a vector to a list of basis vectors
 def vadd(p, vl):
@@ -94,24 +102,44 @@ def get_offsets_in_range(basis, points, rotation_matrix):
                     rotated_point = matrix_mult(rotation_matrix, moved_point)
     return offsets
 
+# edges are written in abstract non-rotated coordinate space
 def draw_edges(w, basis, points, edges, offsets, rotation_matrix):
-    for offset in offsets:
-        for edge in edges:
-            # coordinates of first point with zero offset
-            point1 = vadd(points[edge[0][0]], [scalar_mult(mult, basis_vect) for mult, basis_vect in zip(edge[0][1], basis)])
-            # coordinates of first point with correct offset
-            moved_point1 = vadd(point1, [scalar_mult(mult, basis_vect) for mult, basis_vect in zip(offset, basis)])
-            # coordinates of second point with zero offset
-            point2 = vadd(points[edge[1][0]], [scalar_mult(mult, basis_vect) for mult, basis_vect in zip(edge[1][1], basis)])
-            # coordinates of second point with correct offset
-            moved_point2 = vadd(point2, [scalar_mult(mult, basis_vect) for mult, basis_vect in zip(offset, basis)])
-            # rotated coordinate of first point
-            rotated_point1 = matrix_mult(rotation_matrix, moved_point1)
-            # rotated coordinates of second point
-            rotated_point2 = matrix_mult(rotation_matrix, moved_point2)
-            flat_point1 = truncto2(rotated_point1)
-            flat_point2 = truncto2(rotated_point2)
-            draw_line(w, flat_point1, flat_point2)
+    # determines the z coordinate of the midpoint of the edge in abstract rotated coordinate space
+    def edge_depth(edge, offset):
+        assert(len(points[edge[0][0]]) == 3)
+
+        # coordinates of first point with zero offset
+        point1 = vadd(points[edge[0][0]], [scalar_mult(mult, basis_vect) for mult, basis_vect in zip(edge[0][1], basis)])
+        # coordinates of first point with correct offset
+        moved_point1 = vadd(point1, [scalar_mult(mult, basis_vect) for mult, basis_vect in zip(offset, basis)])
+        # coordinates of second point with zero offset
+        point2 = vadd(points[edge[1][0]], [scalar_mult(mult, basis_vect) for mult, basis_vect in zip(edge[1][1], basis)])
+        # coordinates of second point with correct offset
+        moved_point2 = vadd(point2, [scalar_mult(mult, basis_vect) for mult, basis_vect in zip(offset, basis)])
+        # rotated coordinates of first point
+        rotated_point1 = matrix_mult(rotation_matrix, moved_point1)
+        # rotated coordinates of second point
+        rotated_point2 = matrix_mult(rotation_matrix, moved_point2)
+        return (rotated_point1[2] + rotated_point2[2])/2
+
+    edgesoffsets = list(product(edges, offsets))
+    # if the shape is 3d, we want to draw the far edges before the near edges (due to the fading color)
+    if len(basis[0]) == 3:
+        edgesoffsets.sort(key=lambda x: edge_depth(*x))
+    for edge, offset in edgesoffsets:
+        # coordinates of first point with zero offset
+        point1 = vadd(points[edge[0][0]], [scalar_mult(mult, basis_vect) for mult, basis_vect in zip(edge[0][1], basis)])
+        # coordinates of first point with correct offset
+        moved_point1 = vadd(point1, [scalar_mult(mult, basis_vect) for mult, basis_vect in zip(offset, basis)])
+        # coordinates of second point with zero offset
+        point2 = vadd(points[edge[1][0]], [scalar_mult(mult, basis_vect) for mult, basis_vect in zip(edge[1][1], basis)])
+        # coordinates of second point with correct offset
+        moved_point2 = vadd(point2, [scalar_mult(mult, basis_vect) for mult, basis_vect in zip(offset, basis)])
+        # rotated coordinates of first point
+        rotated_point1 = matrix_mult(rotation_matrix, moved_point1)
+        # rotated coordinates of second point
+        rotated_point2 = matrix_mult(rotation_matrix, moved_point2)
+        draw_line(w, rotated_point1, rotated_point2)
     '''for i in multi_range([-3] * dimension, [3] * dimension):
         for edge in edges:
             point1 = vadd(points[edge[0][0]], [scalar_mult(mult, basis_vect) for mult, basis_vect in zip(edge[0][1], basis)])
@@ -125,28 +153,54 @@ def draw_edges(w, basis, points, edges, offsets, rotation_matrix):
             draw_line(w, flat_point1, flat_point2)'''
 
 # draws points on screen given abstract coordinates in n-space
-# first convert from n-space to 2-space
-# then convert from virtual coordinates to physical coordinates
+# convert from abstract coordinates to abstract rotated coordinates, then draw rotated coordinates
 def draw_points(w, basis, points, offsets, rotation_matrix):
-    '''for i in multi_range([-3] * dimension, [3] * dimension):'''
-    for offset in offsets:
-        for point in points:
-            moved_point = vadd(point, [scalar_mult(offset[k], basis[k]) for k in range(len(offset))])
-            rotated_point = matrix_mult(rotation_matrix, moved_point)
-            flat_point = truncto2(rotated_point)
-            draw_point(w, flat_point)
+    # determines the z coordinate of the point in abstract rotated coordinate space
+    def point_depth(point, offset):
+        assert(len(point) == 3)
 
-# draw a point on the screen, given abstract 2D coordinates
-def draw_point(w, point_2d):
-    assert len(point_2d) == 2
+        moved_point = vadd(point, [scalar_mult(offset[k], basis[k]) for k in range(len(offset))])
+        rotated_point = matrix_mult(rotation_matrix, moved_point)
+        return rotated_point[2]
+
+    pointsoffsets = list(product(points, offsets))
+    # if the shape is 3d, we want to draw the far edges before the near edges (due to the fading color)
+    if len(basis[0]) == 3:
+        pointsoffsets.sort(key=lambda x: point_depth(*x))
+    '''for i in multi_range([-3] * dimension, [3] * dimension):'''
+    for point, offset in pointsoffsets:
+        moved_point = vadd(point, [scalar_mult(offset[k], basis[k]) for k in range(len(offset))])
+        rotated_point = matrix_mult(rotation_matrix, moved_point)
+        draw_point(w, rotated_point)
+
+# draw a point on the screen, given abstract rotated 2D coordinates
+def draw_point(w, point):
+    point_2d = truncto2(point)
+    gray = 0
+    # determine how faded ("far away") to draw the point if it has negative z coordinate in "concrete 3D space"
+    if len(point) > 2:
+        if point[2] > 3 or point[2] < -3:
+            return # too far away from center, don't draw anything
+        if point[2] < 0:
+            gray = int(-point[2] / 3 * background_gray)
     phys_point = coord_transform(point_2d)
     px = phys_point[0]
     py = phys_point[1]
-    w.create_oval(px - 3, py - 3, px + 3, py + 3, fill="#000000")
+    w.create_oval(px - 3, py - 3, px + 3, py + 3, fill="#%02x%02x%02x" % (gray, gray, gray), width=0)
 
-# draw a line on the sceren, given abstract 2D coordinates
-def draw_line(w, point_2d_1, point_2d_2):
-    w.create_line(*coord_transform(point_2d_1), *coord_transform(point_2d_2), fil="#000000")
+# draw a line on the sceren, given abstract rotated 2D coordinates of endpoints
+def draw_line(w, point_1, point_2):
+    point_2d_1 = truncto2(point_1)
+    point_2d_2 = truncto2(point_2)
+    gray = 0
+    # determine how faded ("far away") to draw the line if it has negative z coordinates in "concrete 3D space"
+    if len(point_1) > 2:
+        z_midpoint = (point_1[2] + point_2[2])/2
+        if z_midpoint > 3 or z_midpoint < -3:
+            return # too far away from center, don't draw anything
+        if z_midpoint < 0:
+            gray = int(-z_midpoint / 3 * background_gray)
+    w.create_line(*coord_transform(point_2d_1), *coord_transform(point_2d_2), fill="#%02x%02x%02x" % (gray, gray, gray))
 
 def draw_honeycomb(w, basis, points, edges, rotation):
     w.delete("all")
