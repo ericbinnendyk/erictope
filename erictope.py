@@ -272,7 +272,7 @@ if __name__ == "__main__":
     w = Canvas(master, width=500, height=500)
     w.pack()
 
-    # add buttons
+    # add buttons and indicator of dimension of space (different from rank)
     left_button = Button(master, text = "<<", fg = "Black", bg = "Gray")
     left_button.pack()
     right_button = Button(master, text = ">>", fg = "Black", bg = "Gray")
@@ -287,9 +287,12 @@ if __name__ == "__main__":
     ccw_button.pack()
     reset_button = Button(master, text = "Reset position", fg = "Black", bg = "Gray")
     reset_button.pack()
+    dim_display = Text(master, height = 1, width=10)
+    dim_display.pack()
 
     print("Welcome to Erictope!")
     path = input("Enter file to read coordinates from: ")
+    # read the file
     data = open(path, 'r')
     for line in data:
         line = line.strip('\n')
@@ -448,6 +451,7 @@ if __name__ == "__main__":
     cw_button.configure(command=cw_button_fn)
     ccw_button.configure(command=ccw_button_fn)
     reset_button.configure(command=reset_position)
+    dim_display.insert(INSERT, str(dimension) + 'D')
 
     mainloop()
 
