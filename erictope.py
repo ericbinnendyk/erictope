@@ -432,7 +432,7 @@ if __name__ == "__main__":
     scale_by_2_btn.pack()
     scale_by_half_btn = Button(master, text = "Zoom out", fg = "Black", bg = "Gray")
     scale_by_half_btn.pack()
-    dim_display = Text(master, height = 1, width=10)
+    dim_display = Label(master, height = 1, width=10)
     dim_display.pack()
 
     print("Welcome to Erictope!")
@@ -442,6 +442,6 @@ if __name__ == "__main__":
     poly.draw(w)
 
     assign_buttons_functions(left_button, right_button, up_button, down_button, cw_button, ccw_button, reset_button, scale_by_2_btn, scale_by_half_btn)
-    dim_display.insert(INSERT, str(poly.dimension) + 'D')
+    dim_display.config(text=str(poly.dimension) + 'D')
 
     mainloop()
