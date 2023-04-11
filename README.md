@@ -13,12 +13,13 @@ Still in the early stages of development.
 Implemented:
 * display wireframes of 2D or 3D periodic tessellations
 * rotate these tessellations
+* zoom in and out
 
 Planned for the future:
-* zoom in and out, and pan?
+* pan tessellations?
 * highlight vertices, edges, faces, and cells
 * construct polytopes via kaleidoscopic reflection of points, and with interactive sliders?
-* add options to display honeycombs in perspective or 3d?
-* do spherical polytopes too
+* add options to display honeycombs in perspective or stereographic 3d?
+* allow spherical polytopes too
 * add export feature
 * add import from OFF data

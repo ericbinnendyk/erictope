@@ -219,6 +219,11 @@ class Polytope: # Is there a way to make this associated with exactly one instan
         elif self.dimension == 2:
             delta = [[cos(tau/24),sin(tau/24)],[-sin(tau/24),cos(tau/24)]]
             self.rotation = two_matrix_mult(delta, self.rotation)
+    # s = scaling factor
+    def scale(self, s):
+        tfm = identity(self.dimension)
+        tfm = [scalar_mult(s, v) for v in tfm]
+        self.rotation = two_matrix_mult(tfm, self.rotation)
     def reset_position(self):
         self.rotation = identity(self.dimension)
 
@@ -352,7 +357,7 @@ def build(path):
     poly = Polytope(dimension=dimension, basis=basis, points=points, edges=edges)
     return poly
 
-def assign_buttons_functions(left_button, right_button, up_button, down_button, cw_button, ccw_button, reset_button):
+def assign_buttons_functions(left_button, right_button, up_button, down_button, cw_button, ccw_button, reset_button, scale_by_2_btn, scale_by_half_btn):
     def left_button_fn():
         poly.rotate_left()
         poly.draw(w)
@@ -381,6 +386,14 @@ def assign_buttons_functions(left_button, right_button, up_button, down_button, 
         poly.reset_position()
         poly.draw(w)
 
+    def scale_by_2():
+        poly.scale(2)
+        poly.draw(w)
+
+    def scale_by_half():
+        poly.scale(1/2)
+        poly.draw(w)
+
     left_button.configure(command=left_button_fn)
     right_button.configure(command=right_button_fn)
     up_button.configure(command=up_button_fn)
@@ -388,6 +401,8 @@ def assign_buttons_functions(left_button, right_button, up_button, down_button, 
     cw_button.configure(command=cw_button_fn)
     ccw_button.configure(command=ccw_button_fn)
     reset_button.configure(command=reset_position)
+    scale_by_2_btn.configure(command=scale_by_2)
+    scale_by_half_btn.configure(command=scale_by_half)
 
 if __name__ == "__main__":
     # open up tkinter canvas
@@ -413,6 +428,10 @@ if __name__ == "__main__":
     ccw_button.pack()
     reset_button = Button(master, text = "Reset position", fg = "Black", bg = "Gray")
     reset_button.pack()
+    scale_by_2_btn = Button(master, text = "Zoom in", fg = "Black", bg = "Gray")
+    scale_by_2_btn.pack()
+    scale_by_half_btn = Button(master, text = "Zoom out", fg = "Black", bg = "Gray")
+    scale_by_half_btn.pack()
     dim_display = Text(master, height = 1, width=10)
     dim_display.pack()
 
@@ -422,7 +441,7 @@ if __name__ == "__main__":
 
     poly.draw(w)
 
-    assign_buttons_functions(left_button, right_button, up_button, down_button, cw_button, ccw_button, reset_button)
+    assign_buttons_functions(left_button, right_button, up_button, down_button, cw_button, ccw_button, reset_button, scale_by_2_btn, scale_by_half_btn)
     dim_display.insert(INSERT, str(poly.dimension) + 'D')
 
     mainloop()
